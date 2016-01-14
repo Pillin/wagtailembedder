@@ -4,10 +4,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import PermissionDenied
 
 from wagtail.wagtailadmin.modal_workflow import render_modal_workflow
-
 from wagtail.wagtailsnippets.models import get_snippet_content_types
 from wagtail.wagtailsnippets.permissions import user_can_edit_snippet_type
-from wagtail.wagtailsnippets.views.snippets import get_snippet_type_description, get_snippet_type_name
+from wagtail.wagtailsnippets.views.snippets import get_snippet_type_name
 from wagtail.wagtailsnippets.views.snippets import get_content_type_from_url_params
 from wagtailembedder.format import embed_to_editor_html
 
@@ -16,10 +15,12 @@ from wagtailembedder.format import embed_to_editor_html
 def index(request):
     snippet_types = [(
         get_snippet_type_name(content_type)[1],
-        get_snippet_type_description(content_type),
+        '',
         content_type)
         for content_type in get_snippet_content_types()
-        if user_can_edit_snippet_type(request.user, content_type)
+        if user_can_edit_snippet_type(request.user, content_type) and hasattr(content_type.model_class()._meta, 'embedder_snippet') and content_type.model_class()._meta.embedder_snippet
+
+
     ]
     return render_modal_workflow(
         request,
@@ -34,8 +35,7 @@ def index(request):
 def index_objects(request, content_type_app_name, content_type_model_name):
     snippet_types = get_snippet_content_types()
     for content_type in snippet_types:
-        name = get_snippet_type_name(content_type)[0]
-        if name.lower().replace(" ", "") == content_type_model_name:
+        if content_type.model.lower().replace(" ", "") == content_type_model_name:
             model = content_type.model_class()
             items = model.objects.all()
             snippet_type_name, snippet_type_name_plural = get_snippet_type_name(content_type)
